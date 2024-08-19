@@ -3,7 +3,9 @@ import './App.css';
 
 function App() {
   const [tasks, setTasks] = useState([]);
-  const [task, setTask] = useState('');
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [deadline, setDeadline] = useState('');
 
   useEffect(() => {
     fetch('http://localhost:5000/api/tasks')
@@ -18,18 +20,30 @@ function App() {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        title: task,
-        description: '',
-        completed: false
-      }),
+      body: JSON.stringify({ title, description, deadline }),
     })
       .then(response => response.json())
       .then(newTask => setTasks([...tasks, newTask]))
       .catch(error => console.error('Error adding task:', error));
-    setTask('');
+    setTitle('');
+    setDescription('');
+    setDeadline('');
   };
-  
+
+  const deleteTask = (id) => {
+    fetch(`http://localhost:5000/api/tasks/${id}`, {
+      method: 'DELETE',
+    })
+      .then(response => {
+        if (response.ok) {
+          setTasks(tasks.filter(task => task._id !== id));
+        } else {
+          console.error('Error deleting task:', response.statusText);
+        }
+      })
+      .catch(error => console.error('Error deleting task:', error));
+  };
+
   return (
     <div className="App">
       <header className="App-header">
@@ -37,17 +51,45 @@ function App() {
         <div className="task-input">
           <input
             type="text"
-            value={task}
-            onChange={(e) => setTask(e.target.value)}
-            placeholder="Add a new task"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Title"
+          />
+          <input
+            type="text"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Description"
+          />
+          <input
+            type="date"
+            value={deadline}
+            onChange={(e) => setDeadline(e.target.value)}
           />
           <button onClick={addTask}>Add Task</button>
         </div>
-        <ul className="task-list">
-          {tasks.map((t, index) => (
-            <li key={index}>{t.title}</li>
-          ))}
-        </ul>
+        <table className="task-table">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Description</th>
+              <th>Deadline</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {tasks.map((task) => (
+              <tr key={task._id}>
+                <td>{task.title}</td>
+                <td>{task.description}</td>
+                <td>{new Date(task.deadline).toLocaleDateString()}</td>
+                <td>
+                  <button onClick={() => deleteTask(task._id)}>Delete</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </header>
     </div>
   );

@@ -19,9 +19,22 @@ app.use(cors()); // Enable CORS
 
 // Define Task model
 const taskSchema = new mongoose.Schema({
-  title: { type: String, required: true },
-  description: { type: String },
-  completed: { type: Boolean, default: false }
+  title: {
+    type: String,
+    required: true
+  },
+  description: {
+    type: String,
+    default: ''
+  },
+  deadline: {
+    type: Date,
+    default: null
+  },
+  completed: {
+    type: Boolean,
+    default: false
+  }
 });
 const Task = mongoose.model('Task', taskSchema);
 
@@ -42,21 +55,41 @@ app.get('/api/tasks', async (req, res) => {
 
 // Route to create a new task
 app.post('/api/tasks', async (req, res) => {
-  const { title, description, completed } = req.body;
+  const { title, description, deadline } = req.body;
 
-  // Simple validation
   if (!title) {
+    console.error('Validation error: Title is required');
     return res.status(400).json({ message: 'Title is required' });
   }
 
   try {
-    const newTask = new Task({ title, description, completed });
+    const newTask = new Task({ title, description, deadline, completed: false });
     await newTask.save();
     res.status(201).json(newTask);
   } catch (error) {
+    console.error('Error creating task:', error);
     res.status(500).json({ message: 'Error creating task', error });
   }
 });
+
+
+
+app.delete('/api/tasks/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const task = await Task.findByIdAndDelete(id);
+    if (!task) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+    res.json({ message: 'Task deleted' });
+  } catch (err) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+
+
+
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
